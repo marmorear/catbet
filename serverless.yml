@@ -1,0 +1,118 @@
+service: catbet
+
+plugins:
+  # npm i serverless-dynamodb-local --save-dev && sls dynamodb install
+  - serverless-dynamodb-local
+  - serverless-offline
+
+
+custom:
+  serverless-offline:
+    httpPort: 9090
+  dynamodb:
+    port: 8000
+    stages:
+      - dev
+    start:
+      inMemory: true
+      heapInitial: 200m
+      heapMax: 1g
+      migrate: true
+      seed: true
+      convertEmptyValues: true
+    seed:
+      domain:
+        sources:
+          - table: CATS
+          - table: APOSTAS
+   
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+
+  # you can overwrite defaults here
+  stage: dev
+  region: us-east-1
+  environment:
+   CATS_TABLE: 'cats-${opt:stage, self:provider.stage}'
+   APOSTAS_TABLE: 'apostas-${opt:stage, self:provider.stage}'
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:PutItem
+        - dynamodb:DeleteItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CATS_TABLE}'
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:PutItem
+        - dynamodb:DeleteItem
+        - dynamodb:GetItem
+        - dynamodb:UpdateItem
+      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.APOSTAS_TABLE}'
+
+functions:
+  listarPeixes:
+    handler: handler.listarPeixes
+    name: listarPeixes
+    events:
+      - http:
+          path: catbet/lista_peixes
+          method: get
+
+  listarAposta:
+    handler: handler.listarAposta
+    name: listarAposta
+    events:
+      - http:
+          path: catbet/{catname}
+          method: get
+
+  apostar:
+    handler: handler.apostar
+    name: apostar
+    events:
+      - http:
+          path: catbet/apostar
+          method: post
+
+
+
+resources:
+  Resources:
+    CatsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CATS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: cats_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: cats_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    ApostasTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.APOSTAS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: aposta_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: aposta_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+
+
