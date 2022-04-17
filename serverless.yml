@@ -7,8 +7,6 @@ plugins:
 
 
 custom:
-  serverless-offline:
-    httpPort: 9090
   dynamodb:
     port: 8000
     stages:
@@ -24,7 +22,6 @@ custom:
       domain:
         sources:
           - table: CATS
-          - table: APOSTAS
    
 
 provider:
@@ -36,7 +33,6 @@ provider:
   region: us-east-1
   environment:
    CATS_TABLE: 'cats-${opt:stage, self:provider.stage}'
-   APOSTAS_TABLE: 'apostas-${opt:stage, self:provider.stage}'
 
   iamRoleStatements:
     - Effect: Allow
@@ -48,15 +44,6 @@ provider:
         - dynamodb:GetItem
         - dynamodb:UpdateItem
       Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CATS_TABLE}'
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:PutItem
-        - dynamodb:DeleteItem
-        - dynamodb:GetItem
-        - dynamodb:UpdateItem
-      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.APOSTAS_TABLE}'
 
 functions:
   listarPeixes:

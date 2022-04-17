@@ -8,7 +8,6 @@ const peixes =
     { id: 4, nomePeixe: "Cação"},
     { id: 5, nomePeixe: "Tilapia"},
     { id: 6, nomePeixe: "Pintado"}
-    
   ];
 
 
@@ -20,6 +19,7 @@ app.use(bp.json());
 app.use(bp.urlencoded({ extended: true }));
 
 const AWS = require("aws-sdk");
+AWS.config.update({ region:'us-east-1' });
 const { v4: uuidv4 } = require("uuid");
 const superagent = require('superagent');
 const temperatures = require("temperatures").default;
@@ -52,17 +52,18 @@ module.exports.listarAposta = async (event) => {
       })
       .promise();
 
-    if (!data.Item) {
+    if (!data.Items) {
       return {
         statusCode: 404,
         body: JSON.stringify({ error: "Apostador não existe" }, null, 2),
       };
     }
 
-    const apostas = data.Item;
+    const apostas = data.Items;
   return {
         "body": JSON.stringify(apostas),
-        "headers": {},
+        "headers": { 'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'},
         "statusCode": 200
   };
 } catch (err) {
@@ -102,7 +103,8 @@ module.exports.listarPeixes = async (event) => {
         console.log("Deu certo!")
         var retorno = {
           "body": JSON.stringify(peixes),
-          "headers": {},
+          "headers": { 'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'},
           "statusCode": 200,
         };
         return retorno
@@ -110,7 +112,8 @@ module.exports.listarPeixes = async (event) => {
         console.log("Frio demais para os peixes competirem.")
         return {
           "body": JSON.stringify("Frio demais para os peixes competirem."),
-          "headers": {},
+          "headers": { 'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'},
           "statusCode": 400,
         };
       }
@@ -118,7 +121,8 @@ module.exports.listarPeixes = async (event) => {
       console.log("API externa com problema.")
       return {
         "body": JSON.stringify("API externa com problema."),
-        "headers": {},
+        "headers": { 'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'},
         "statusCode": 400,
       };
     }
@@ -126,7 +130,8 @@ module.exports.listarPeixes = async (event) => {
     console.log(error.response);
     return {
       "body": JSON.stringify("Erro interno."),
-      "headers": {},
+      "headers": { 'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'},
       "statusCode": 500,
     };
   }
@@ -140,19 +145,19 @@ module.exports.apostar = async (event) => {
 
     let dados = JSON.parse(event.body);
 
-    const { nome, id_peixe, unidades_racao } = dados;
+    const { nomeGato, idPeixe, qtdRacao } = dados;
 
     const aposta = {
       aposta_id: uuidv4(),
-      nome,
-      id_peixe,
-      unidades_racao,
+      nomeGato,
+      idPeixe,
+      qtdRacao,
       criado_em: timestamp
     };
 
     await dynamoDb
       .put({
-        TableName: "APOSTA",
+        TableName: "CATS_TABLE",
         Item: aposta,
       })
       .promise();
