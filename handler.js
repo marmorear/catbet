@@ -1,16 +1,28 @@
 "use strict";
 
-const gatos = [
-  { id: 1, nome: "Maria", dataNascimento: "1984-11-01" },
-  { id: 2, nome: "Joao", dataNascimento: "1980-01-16" },
-  { id: 3, nome: "Jose", dataNascimento: "1998-06-06" },
-];
+const peixes = 
+  [
+    { id: 1, nomePeixe: "Atum"},
+    { id: 2, nomePeixe: "Sardinha"},
+    { id: 3, nomePeixe: "Salmão"},
+    { id: 4, nomePeixe: "Cação"},
+    { id: 5, nomePeixe: "Tilapia"},
+    { id: 6, nomePeixe: "Pintado"}
+    
+  ];
 
-var bodyParser = require('body-parser')
+
+const bp = require("body-parser");
+const express = require("express");
+const app = express();
+
+app.use(bp.json());
+app.use(bp.urlencoded({ extended: true }));
 
 const AWS = require("aws-sdk");
 const { v4: uuidv4 } = require("uuid");
 const superagent = require('superagent');
+const temperatures = require("temperatures").default;
 
 const dynamodbOfflineOptions = {
   region: "localhost",
@@ -29,48 +41,101 @@ const params = {
 };
 
 module.exports.listarAposta = async (event) => {
-  console.log(event)
+  try {
+  const { catname } = event.pathParameters;
+  const data = await dynamoDb
+      .get({
+        ...params,
+        Key: {
+          name: catname,
+        },
+      })
+      .promise();
+
+    if (!data.Item) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: "Apostador não existe" }, null, 2),
+      };
+    }
+
+    const apostas = data.Item;
   return {
-    statusCode: 201
+        "body": JSON.stringify(apostas),
+        "headers": {},
+        "statusCode": 200
   };
-  
+} catch (err) {
+  console.log("Error", err);
+  return {
+    statusCode: err.statusCode ? err.statusCode : 500,
+    body: JSON.stringify({
+      error: err.name ? err.name : "Exception",
+      message: err.message ? err.message : "Unknown error",
+    }),
+  };
+}
 };
 
+
 module.exports.listarPeixes = async (event) => {
-  
-  // const {long,lat} = dados;
-//   (async () => {
-//     try {
-//       const queryArguments = {
-//         lat: long,
-//         lon: lat,
-//         appid: 'c6e29887c71721b155d59554f3e2c620',
-//       }
+  const {long, lat} = event.queryStringParameters;
+  (async () => {
+    try {
+      const queryArguments = {
+        lat: lat,
+        lon: long,
+        appid: 'c6e29887c71721b155d59554f3e2c620',
+      }
 
-//     const response = await superagent.get('https://api.openweathermap.org/data/2.5/weather').query(queryArguments)
-//     console.log(response.body.main.temp);
-//     console.log(response.status)
+    const response = await superagent.get('https://api.openweathermap.org/data/2.5/weather').query(queryArguments)
+    console.log(response.body.main.temp);
 
-//     if (response.status == 200){
-//       const kelvinToCelsius = require('kelvin-to-celsius');
-//       conversaoCelsius = kelvinToCelsius(response.body.main.temp);
-//       console.log(conversaoCelsius);
-//       return {
-//         statusCode: 200,
-//         body: JSON.stringify(response.body),
-//       };
-//     }
-    
-//   } catch (error) {
-//     console.log(error.response);
-//   }
-// })();
-  
+    if (response.status == 200){
+      var tempCelsius = (temperatures.convert({
+        from: "K",
+        to: "C",
+        value:response.body.main.temp 
+      }));
+      console.log(tempCelsius)
+      if(tempCelsius >= 22){
+        console.log("Deu certo!")
+        var retorno = {
+          "body": JSON.stringify(peixes),
+          "headers": {},
+          "statusCode": 200,
+        };
+        return retorno
+      }else{
+        console.log("Frio demais para os peixes competirem.")
+        return {
+          "body": JSON.stringify("Frio demais para os peixes competirem."),
+          "headers": {},
+          "statusCode": 400,
+        };
+      }
+    }else{
+      console.log("API externa com problema.")
+      return {
+        "body": JSON.stringify("API externa com problema."),
+        "headers": {},
+        "statusCode": 400,
+      };
+    }
+  } catch (error) {
+    console.log(error.response);
+    return {
+      "body": JSON.stringify("Erro interno."),
+      "headers": {},
+      "statusCode": 500,
+    };
+  }
+  })();
 };
 
 module.exports.apostar = async (event) => {
+  console.log(event);
   try {
-    console.log(event);
     const timestamp = new Date().getTime();
 
     let dados = JSON.parse(event.body);
@@ -82,8 +147,7 @@ module.exports.apostar = async (event) => {
       nome,
       id_peixe,
       unidades_racao,
-      criado_em: timestamp,
-      atualizado_em: timestamp,
+      criado_em: timestamp
     };
 
     await dynamoDb
