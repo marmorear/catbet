@@ -32,18 +32,19 @@ provider:
   stage: dev
   region: us-east-1
   environment:
-   CATS_TABLE: 'cats-${opt:stage, self:provider.stage}'
-
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:PutItem
-        - dynamodb:DeleteItem
-        - dynamodb:GetItem
-        - dynamodb:UpdateItem
-      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CATS_TABLE}'
+   CATS_TABLE: 'CATS-${opt:stage, self:provider.stage}'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+          Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.CATS_TABLE}'
 
 functions:
   listarPeixes:
@@ -87,19 +88,3 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-    ApostasTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ${self:provider.environment.APOSTAS_TABLE}
-        AttributeDefinitions:
-          - AttributeName: aposta_id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: aposta_id
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-
-
-

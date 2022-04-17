@@ -1,16 +1,4 @@
 "use strict";
-
-const peixes = 
-  [
-    { id: 1, nomePeixe: "Atum"},
-    { id: 2, nomePeixe: "Sardinha"},
-    { id: 3, nomePeixe: "Salmão"},
-    { id: 4, nomePeixe: "Cação"},
-    { id: 5, nomePeixe: "Tilapia"},
-    { id: 6, nomePeixe: "Pintado"}
-  ];
-
-
 const bp = require("body-parser");
 const express = require("express");
 const app = express();
@@ -79,9 +67,18 @@ module.exports.listarAposta = async (event) => {
 };
 
 
-module.exports.listarPeixes = async (event) => {
+module.exports.listarPeixes = async (event,context, callback) => {
   const {long, lat} = event.queryStringParameters;
-  (async () => {
+  const peixes = 
+  [
+    { id: 1, nomePeixe: "Atum"},
+    { id: 2, nomePeixe: "Sardinha"},
+    { id: 3, nomePeixe: "Salmão"},
+    { id: 4, nomePeixe: "Cação"},
+    { id: 5, nomePeixe: "Tilapia"},
+    { id: 6, nomePeixe: "Pintado"}
+  ];
+  await (async () => {
     try {
       const queryArguments = {
         lat: lat,
@@ -101,39 +98,39 @@ module.exports.listarPeixes = async (event) => {
       console.log(tempCelsius)
       if(tempCelsius >= 22){
         console.log("Deu certo!")
-        var retorno = {
-          "body": JSON.stringify(peixes),
-          "headers": { 'Content-Type': 'application/json',
+        callback(null,{
+          body: JSON.stringify(peixes),
+          headers: { 'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'},
-          "statusCode": 200,
-        };
-        return retorno
+          statusCode: 200,
+        });
+        
       }else{
         console.log("Frio demais para os peixes competirem.")
-        return {
-          "body": JSON.stringify("Frio demais para os peixes competirem."),
-          "headers": { 'Content-Type': 'application/json',
+        callback (null,{
+          body: JSON.stringify("Frio demais para os peixes competirem."),
+          headers: { 'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'},
-          "statusCode": 400,
-        };
+          statusCode: 400,
+        });
       }
     }else{
       console.log("API externa com problema.")
-      return {
-        "body": JSON.stringify("API externa com problema."),
-        "headers": { 'Content-Type': 'application/json',
+      callback(null, {
+        body: JSON.stringify("API externa com problema."),
+        headers: { 'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'},
-        "statusCode": 400,
-      };
+        statusCode: 400,
+      });
     }
   } catch (error) {
     console.log(error.response);
-    return {
-      "body": JSON.stringify("Erro interno."),
-      "headers": { 'Content-Type': 'application/json',
+    callback(null,{
+      body: JSON.stringify("Erro interno."),
+      headers: { 'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'},
-      "statusCode": 500,
-    };
+      statusCode: 500,
+    });
   }
   })();
 };
