@@ -1,8 +1,10 @@
+org: marmorear
+app: catbet
 service: catbet
 
 plugins:
   # npm i serverless-dynamodb-local --save-dev && sls dynamodb install
-  # - serverless-dynamodb-local
+  - serverless-dynamodb-local
   - serverless-offline
 
 
@@ -61,11 +63,11 @@ functions:
           method: get
 
   criaAposta:
-    handler: posts.criaAposta
+    handler: handler.criaAposta
     name: criaAposta
     events:
       - http:
-          path: catbet/criaAposta
+          path: catbet/criaAposta/{catName}
           method: post
 
 

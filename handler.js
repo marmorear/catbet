@@ -143,54 +143,65 @@ module.exports.listarPeixes = async (event,context, callback) => {
 };
 
 module.exports.criaAposta = async (event,context,callback) => {
+  const { catName } = event.pathParameters
   try {
     const json = JSON.parse(event.body);
+    const {id_peixe,qtd_racao} = json;
 
-    // YOUR CODE HERE
+    const data = await dynamoDb
+      .get({
+        ...params,
+        Key: {
+          cat_name: catName,
+        },
+      })
+      .promise();
 
-} catch (e) {
-    console.error(e);
-    callback(null, { statusCode: 504, headers: { "Content-Type": "application/json"}, body: JSON.stringify({ message: "Internal Error" }) });
-}
-  // console.log(event);
-  // const timestamp = new Date().getTime();
- 
-  // try {
-  //   const timestamp = new Date().getTime();
-
-  //   let dados = JSON.parse(event.body);
-
-  //   const { nomeGato, idPeixe, qtdRacao } = dados;
-
-  //   const aposta = {
-  //     aposta_id: uuidv4(),
-  //     nomeGato,
-  //     idPeixe,
-  //     qtdRacao,
-  //     criado_em: timestamp
-  //   };
-
-  //   await dynamoDb
-  //     .put({
-  //       TableName: "CATS_TABLE",
-  //       Item: aposta,
-  //     })
-  //     .promise();
-  //     console.log(aposta);
-
-  //   return {
-  //     statusCode: 204,
-  //   };
-  // } catch (err) {
-  //   console.log("Error", err);
-  //   return {
-  //     statusCode: err.statusCode ? err.statusCode : 500,
-  //     body: JSON.stringify({
-  //       error: err.name ? err.name : "Exception",
-  //       message: err.message ? err.message : "Unknown error",
-  //     }),
-  //   };
-  // }
+      if (data.Item){
+        if(data.Item.apostas.lenght >= 2)
+          callback(null,{
+            body: JSON.stringify(`Só pode enviar duas apostas.`),
+            headers: { 'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'},
+            statusCode: 409,
+          }); 
+        }
+          await dynamoDb
+          .update({
+            ...params,
+            Key: {
+              cat_name: catName
+            },
+            UpdateExpression:
+              'SET apostas = list_append(if_not_exists(apostas, :empty_list), :apostas)',
+            ExpressionAttributeValues: {
+              ':apostas': [{
+                "id_peixe": id_peixe,
+                "qtd_racao": qtd_racao
+            }],
+            ":empty_list": []
+            }
+          })
+          .promise()
+          callback(null,{
+            statusCode: 204
+          });
+      } catch (err) {
+        if (err == 'ConditionalCheckFailedException') {
+          callback(null,{
+            body: JSON.stringify(`${catName} não existe`),
+            headers: { 'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'},
+            statusCode: 404,
+          });
+        }
+        callback(null,{
+          body: JSON.stringify("Erro interno. "+ err),
+          headers: { 'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'},
+          statusCode: 500,
+        });
+      }  
 };
 
 
