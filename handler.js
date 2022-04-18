@@ -1,10 +1,15 @@
 "use strict";
-const bp = require("body-parser");
 const express = require("express");
 const app = express();
+app.use(express.json())
+app.use(express.urlencoded({ extended: true}))
 
-app.use(bp.json());
-app.use(bp.urlencoded({ extended: true }));
+app.use( (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*")
+  res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+  next();
+})
 
 const AWS = require("aws-sdk");
 AWS.config.update({ region:'us-east-1' });
@@ -28,41 +33,43 @@ const params = {
   TableName: process.env.CATS_TABLE,
 };
 
-module.exports.listarAposta = async (event) => {
+module.exports.listarAposta = async (event,context,callback) => {
+
   try {
-  const { catname } = event.pathParameters;
-  const data = await dynamoDb
+    const { catName } = event.pathParameters;
+    const data = await dynamoDb
       .get({
         ...params,
         Key: {
-          name: catname,
+          cat_name: catName,
         },
       })
       .promise();
 
-    if (!data.Items) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Apostador não existe" }, null, 2),
-      };
+    if (!data.Item) {
+      callback (null,{
+        body: JSON.stringify("Apostador não localizado."),
+        headers: { 'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'},
+        statusCode: 400,
+      });
     }
 
-    const apostas = data.Items;
-  return {
-        "body": JSON.stringify(apostas),
-        "headers": { 'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'},
-        "statusCode": 200
-  };
+    const apostas = data.Item;
+  return callback(null,{
+    body: JSON.stringify(apostas),
+    headers: { 'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'},
+    statusCode: 200,
+  });
 } catch (err) {
   console.log("Error", err);
-  return {
-    statusCode: err.statusCode ? err.statusCode : 500,
-    body: JSON.stringify({
-      error: err.name ? err.name : "Exception",
-      message: err.message ? err.message : "Unknown error",
-    }),
-  };
+  callback(null,{
+    body: JSON.stringify("Erro interno."),
+    headers: { 'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'},
+    statusCode: 500,
+  });
 }
 };
 
@@ -135,44 +142,55 @@ module.exports.listarPeixes = async (event,context, callback) => {
   })();
 };
 
-module.exports.apostar = async (event) => {
-  console.log(event);
+module.exports.criaAposta = async (event,context,callback) => {
   try {
-    const timestamp = new Date().getTime();
+    const json = JSON.parse(event.body);
 
-    let dados = JSON.parse(event.body);
+    // YOUR CODE HERE
 
-    const { nomeGato, idPeixe, qtdRacao } = dados;
+} catch (e) {
+    console.error(e);
+    callback(null, { statusCode: 504, headers: { "Content-Type": "application/json"}, body: JSON.stringify({ message: "Internal Error" }) });
+}
+  // console.log(event);
+  // const timestamp = new Date().getTime();
+ 
+  // try {
+  //   const timestamp = new Date().getTime();
 
-    const aposta = {
-      aposta_id: uuidv4(),
-      nomeGato,
-      idPeixe,
-      qtdRacao,
-      criado_em: timestamp
-    };
+  //   let dados = JSON.parse(event.body);
 
-    await dynamoDb
-      .put({
-        TableName: "CATS_TABLE",
-        Item: aposta,
-      })
-      .promise();
-      console.log(aposta);
+  //   const { nomeGato, idPeixe, qtdRacao } = dados;
 
-    return {
-      statusCode: 204,
-    };
-  } catch (err) {
-    console.log("Error", err);
-    return {
-      statusCode: err.statusCode ? err.statusCode : 500,
-      body: JSON.stringify({
-        error: err.name ? err.name : "Exception",
-        message: err.message ? err.message : "Unknown error",
-      }),
-    };
-  }
+  //   const aposta = {
+  //     aposta_id: uuidv4(),
+  //     nomeGato,
+  //     idPeixe,
+  //     qtdRacao,
+  //     criado_em: timestamp
+  //   };
+
+  //   await dynamoDb
+  //     .put({
+  //       TableName: "CATS_TABLE",
+  //       Item: aposta,
+  //     })
+  //     .promise();
+  //     console.log(aposta);
+
+  //   return {
+  //     statusCode: 204,
+  //   };
+  // } catch (err) {
+  //   console.log("Error", err);
+  //   return {
+  //     statusCode: err.statusCode ? err.statusCode : 500,
+  //     body: JSON.stringify({
+  //       error: err.name ? err.name : "Exception",
+  //       message: err.message ? err.message : "Unknown error",
+  //     }),
+  //   };
+  // }
 };
 
 

@@ -2,7 +2,7 @@ service: catbet
 
 plugins:
   # npm i serverless-dynamodb-local --save-dev && sls dynamodb install
-  - serverless-dynamodb-local
+  # - serverless-dynamodb-local
   - serverless-offline
 
 
@@ -15,9 +15,6 @@ custom:
       inMemory: true
       heapInitial: 200m
       heapMax: 1g
-      migrate: true
-      seed: true
-      convertEmptyValues: true
     seed:
       domain:
         sources:
@@ -32,7 +29,7 @@ provider:
   stage: dev
   region: us-east-1
   environment:
-   CATS_TABLE: 'CATS-${opt:stage, self:provider.stage}'
+   CATS_TABLE: 'cat-bet-${opt:stage, self:provider.stage}'
   iam:
     role:
       statements:
@@ -52,7 +49,7 @@ functions:
     name: listarPeixes
     events:
       - http:
-          path: catbet/lista_peixes
+          path: catbet/listaPeixes
           method: get
 
   listarAposta:
@@ -60,15 +57,15 @@ functions:
     name: listarAposta
     events:
       - http:
-          path: catbet/{catname}
+          path: catbet/lista/{catName}
           method: get
 
-  apostar:
-    handler: handler.apostar
-    name: apostar
+  criaAposta:
+    handler: posts.criaAposta
+    name: criaAposta
     events:
       - http:
-          path: catbet/apostar
+          path: catbet/criaAposta
           method: post
 
 
@@ -80,10 +77,10 @@ resources:
       Properties:
         TableName: ${self:provider.environment.CATS_TABLE}
         AttributeDefinitions:
-          - AttributeName: cats_id
+          - AttributeName: cat_name
             AttributeType: S
         KeySchema:
-          - AttributeName: cats_id
+          - AttributeName: cat_name
             KeyType: HASH
         ProvisionedThroughput:
           ReadCapacityUnits: 1
