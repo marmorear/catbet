@@ -1,0 +1,16 @@
+ Endpoint de aposta: 
+/dev/catbet/criaAposta/catName={nome}
+body:
+ex:
+{
+    "id_peixe": "2",
+    "qtd_racao": "5"
+}
+
+Endpoint de lista de apostas:
+/dev/catbet/lista/{nome}
+
+Endpoint dos peixes:
+/dev/catbet/listaPeixes/?long={longitudes}&lat={latitude}
+ex:
+51.92

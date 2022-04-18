@@ -156,45 +156,28 @@ module.exports.criaAposta = async (event,context,callback) => {
         },
       })
       .promise();
-
-      if (data.Item){
-        if(data.Item.apostas.lenght >= 2)
-          callback(null,{
-            body: JSON.stringify(`Só pode enviar duas apostas.`),
-            headers: { 'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'},
-            statusCode: 409,
-          }); 
-        }
           await dynamoDb
-          .update({
-            ...params,
-            Key: {
-              cat_name: catName
-            },
-            UpdateExpression:
-              'SET apostas = list_append(if_not_exists(apostas, :empty_list), :apostas)',
-            ExpressionAttributeValues: {
-              ':apostas': [{
-                "id_peixe": id_peixe,
-                "qtd_racao": qtd_racao
-            }],
-            ":empty_list": []
-            }
-          })
-          .promise()
-          callback(null,{
-            statusCode: 204
-          });
+        .update({
+          ...params,
+          Key: {
+            cat_name: catName
+          },
+          UpdateExpression:
+            'SET apostas = list_append(if_not_exists(apostas, :empty_list), :apostas)',
+          ExpressionAttributeValues: {
+            ':apostas': [{
+              "id_peixe": id_peixe,
+              "qtd_racao": qtd_racao
+          }],
+          ":empty_list": []
+          }
+        })
+        .promise()
+        callback(null,{
+          statusCode: 204
+              });
+
       } catch (err) {
-        if (err == 'ConditionalCheckFailedException') {
-          callback(null,{
-            body: JSON.stringify(`${catName} não existe`),
-            headers: { 'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'},
-            statusCode: 404,
-          });
-        }
         callback(null,{
           body: JSON.stringify("Erro interno. "+ err),
           headers: { 'Content-Type': 'application/json',
